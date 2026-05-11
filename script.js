@@ -27,6 +27,7 @@ async function loadArticles() {
     // Load the latest day's articles
     const latest = index.dates[0];
     const r2 = await fetch(`articles/${latest}.json`);
+    if (!r2.ok) throw new Error('no articles');
     allArticles = await r2.json();
 
     renderHero(allArticles[0]);
@@ -66,7 +67,7 @@ function renderGrid(articles) {
   }
 
   grid.innerHTML = toRender.map(a => `
-    <article class="card" data-id="${a.id}" onclick="openModal(${JSON.stringify(a).replace(/"/g,'&quot;')})">
+    <article class="card" data-id="${a.id}">
       <span class="card-cat cat-${a.category}">${catLabel(a.category)}</span>
       <h3 class="card-title">${a.title}</h3>
       <p class="card-summary">${a.summary}</p>
@@ -79,6 +80,13 @@ function renderGrid(articles) {
       </div>
     </article>
   `).join('');
+
+  grid.querySelectorAll('.card').forEach(el => {
+    el.addEventListener('click', () => {
+      const article = allArticles.find(a => a.id === el.dataset.id);
+      if (article) openModal(article);
+    });
+  });
 }
 
 function renderSidebar(articles, index) {

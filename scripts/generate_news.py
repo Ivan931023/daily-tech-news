@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+import time
 from datetime import date, datetime, timezone
 from pathlib import Path
 from groq import Groq
@@ -46,7 +47,19 @@ SYSTEM_PROMPT = """你是一位橫跨量子物理、電腦科學、金融工程�
 7. 只輸出純 JSON，不加任何 markdown 包裹或說明文字"""
 
 
-def generate_article(client: Groq, topic: dict) -> dict:
+def parse_json_response(raw: str) -> dict:
+    raw = raw.strip()
+    # Strip markdown code fences if present
+    if raw.startswith("```"):
+        lines = raw.split("\n")
+        # Remove first line (```json or ```) and last ``` line
+        inner = "\n".join(lines[1:])
+        inner = inner.rsplit("```", 1)[0]
+        raw = inner.strip()
+    return json.loads(raw)
+
+
+def generate_article(client: Groq, topic: dict, article_id: str) -> dict:
     today_str = datetime.now(timezone.utc).strftime("%Y年%m月%d日")
 
     prompt = f"""今天是 {today_str}。請為「量子視野日報」撰寫一篇深度技術分析文章。
@@ -59,7 +72,7 @@ def generate_article(client: Groq, topic: dict) -> dict:
 
 只輸出純 JSON，格式如下：
 {{
-  "id": "唯一ID含日期",
+  "id": "{article_id}",
   "category": "{topic['category']}",
   "title": "標題（20-35字）",
   "summary": "摘要（80-120字）",
@@ -73,29 +86,36 @@ def generate_article(client: Groq, topic: dict) -> dict:
     {{"term": "術語", "def": "定義（40字以內）"}},
     {{"term": "術語2", "def": "定義"}}
   ],
-  "depth": 5,
-  "read_time": 8,
+  "depth": <1-5 整數，根據技術複雜度評估>,
+  "read_time": <預計閱讀分鐘數，根據文章長度估算>,
   "date": "{TODAY}"
 }}"""
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7,
-        max_tokens=2048,
-    )
+    for attempt in range(3):
+        try:
+            response = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=2048,
+            )
+            raw = response.choices[0].message.content
+            article = parse_json_response(raw)
+            article["id"] = article_id  # enforce correct id regardless of model output
+            return article
+        except json.JSONDecodeError as e:
+            print(f"  JSON parse error (attempt {attempt+1}/3): {e}", file=sys.stderr)
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+        except Exception as e:
+            print(f"  API error (attempt {attempt+1}/3): {e}", file=sys.stderr)
+            if attempt < 2:
+                time.sleep(2 ** attempt)
 
-    raw = response.choices[0].message.content.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    raw = raw.strip()
-
-    return json.loads(raw)
+    raise RuntimeError(f"Failed to generate article for {topic['category']} after 3 attempts")
 
 
 def update_index(new_date: str):
@@ -130,13 +150,18 @@ def main():
 
     articles = []
     for i, topic in enumerate(TOPIC_ROTATION):
+        article_id = f"{TODAY}-{topic['category']}"
         print(f"Generating article {i+1}/{len(TOPIC_ROTATION)}: {topic['category']}")
         try:
-            article = generate_article(client, topic)
+            article = generate_article(client, topic, article_id)
             articles.append(article)
             print(f"  ✓ {article['title'][:40]}...")
         except Exception as e:
             print(f"  ✗ Failed: {e}", file=sys.stderr)
+
+        # Avoid rate limiting between requests
+        if i < len(TOPIC_ROTATION) - 1:
+            time.sleep(3)
 
     if not articles:
         print("No articles generated, aborting.", file=sys.stderr)

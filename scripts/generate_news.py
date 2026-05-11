@@ -2,9 +2,9 @@
 import json
 import os
 import sys
-import subprocess
 from datetime import date, datetime, timezone
 from pathlib import Path
+import google.generativeai as genai
 
 TODAY = date.today().isoformat()
 ARTICLES_DIR = Path(__file__).parent.parent / "articles"
@@ -46,7 +46,7 @@ SYSTEM_PROMPT = """你是一位橫跨量子物理、電腦科學、金融工程�
 7. 只輸出純 JSON，不加任何 markdown 包裹或說明文字"""
 
 
-def generate_article(topic: dict) -> dict:
+def generate_article(model, topic: dict) -> dict:
     today_str = datetime.now(timezone.utc).strftime("%Y年%m月%d日")
 
     prompt = f"""{SYSTEM_PROMPT}
@@ -80,15 +80,9 @@ def generate_article(topic: dict) -> dict:
   "date": "{TODAY}"
 }}"""
 
-    result = subprocess.run(
-        ["claude", "-p", prompt, "--output-format", "text"],
-        capture_output=True, text=True, timeout=120
-    )
+    response = model.generate_content(prompt)
+    raw = response.text.strip()
 
-    if result.returncode != 0:
-        raise RuntimeError(f"claude CLI error: {result.stderr[:300]}")
-
-    raw = result.stdout.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
@@ -116,6 +110,14 @@ def update_index(new_date: str):
 
 
 def main():
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        print("ERROR: GEMINI_API_KEY not set", file=sys.stderr)
+        sys.exit(1)
+
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-2.0-flash")
+
     output_path = ARTICLES_DIR / f"{TODAY}.json"
     if output_path.exists():
         print(f"Articles for {TODAY} already exist, skipping.")
@@ -125,7 +127,7 @@ def main():
     for i, topic in enumerate(TOPIC_ROTATION):
         print(f"Generating article {i+1}/{len(TOPIC_ROTATION)}: {topic['category']}")
         try:
-            article = generate_article(topic)
+            article = generate_article(model, topic)
             articles.append(article)
             print(f"  ✓ {article['title'][:40]}...")
         except Exception as e:

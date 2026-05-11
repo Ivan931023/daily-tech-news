@@ -4,7 +4,7 @@ import os
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
-import google.generativeai as genai
+from groq import Groq
 
 TODAY = date.today().isoformat()
 ARTICLES_DIR = Path(__file__).parent.parent / "articles"
@@ -46,12 +46,10 @@ SYSTEM_PROMPT = """你是一位橫跨量子物理、電腦科學、金融工程�
 7. 只輸出純 JSON，不加任何 markdown 包裹或說明文字"""
 
 
-def generate_article(model, topic: dict) -> dict:
+def generate_article(client: Groq, topic: dict) -> dict:
     today_str = datetime.now(timezone.utc).strftime("%Y年%m月%d日")
 
-    prompt = f"""{SYSTEM_PROMPT}
-
-今天是 {today_str}。請為「量子視野日報」撰寫一篇深度技術分析文章。
+    prompt = f"""今天是 {today_str}。請為「量子視野日報」撰寫一篇深度技術分析文章。
 
 分類：{topic['category']}
 聚焦領域：{topic['focus']}
@@ -59,30 +57,38 @@ def generate_article(model, topic: dict) -> dict:
 
 請選擇一個在過去 2-4 週內有實質進展、或有長期結構性重要性但被低估的具體議題。
 
-輸出格式（嚴格 JSON，不加任何 markdown 包裹）：
+只輸出純 JSON，格式如下：
 {{
-  "id": "文章唯一ID（英文+數字，含日期）",
+  "id": "唯一ID含日期",
   "category": "{topic['category']}",
-  "title": "標題（20-35字，技術精準，有資訊密度）",
-  "summary": "摘要（80-120字，含關鍵技術概念和核心矛盾）",
-  "overview": "概述段落（150-200字，建立問題框架）",
-  "technical_core": "技術核心（200-300字，具體機制、公式思路、架構細節）",
-  "analysis": ["分析段落1（150-200字）", "分析段落2（150-200字）"],
-  "implications": ["影響1（60-80字）", "影響2（60-80字）", "影響3（60-80字）"],
-  "outlook": "前瞻展望（100-150字，具體可觀察的指標）",
+  "title": "標題（20-35字）",
+  "summary": "摘要（80-120字）",
+  "overview": "概述（150-200字）",
+  "technical_core": "技術核心（200-300字）",
+  "analysis": ["分析段落1", "分析段落2"],
+  "implications": ["影響1", "影響2", "影響3"],
+  "outlook": "前瞻展望（100-150字）",
   "keywords": ["關鍵詞1", "關鍵詞2", "關鍵詞3", "關鍵詞4", "關鍵詞5"],
   "glossary": [
-    {{"term": "技術術語", "def": "一句話精準定義（40字以內）"}},
-    {{"term": "技術術語2", "def": "一句話精準定義"}}
+    {{"term": "術語", "def": "定義（40字以內）"}},
+    {{"term": "術語2", "def": "定義"}}
   ],
-  "depth": 深度評分（1-5整數，5最深）,
-  "read_time": 閱讀時間分鐘數（整數）,
+  "depth": 5,
+  "read_time": 8,
   "date": "{TODAY}"
 }}"""
 
-    response = model.generate_content(prompt)
-    raw = response.text.strip()
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.7,
+        max_tokens=2048,
+    )
 
+    raw = response.choices[0].message.content.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
@@ -110,13 +116,12 @@ def update_index(new_date: str):
 
 
 def main():
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        print("ERROR: GEMINI_API_KEY not set", file=sys.stderr)
+        print("ERROR: GROQ_API_KEY not set", file=sys.stderr)
         sys.exit(1)
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    client = Groq(api_key=api_key)
 
     output_path = ARTICLES_DIR / f"{TODAY}.json"
     if output_path.exists():
@@ -127,7 +132,7 @@ def main():
     for i, topic in enumerate(TOPIC_ROTATION):
         print(f"Generating article {i+1}/{len(TOPIC_ROTATION)}: {topic['category']}")
         try:
-            article = generate_article(model, topic)
+            article = generate_article(client, topic)
             articles.append(article)
             print(f"  ✓ {article['title'][:40]}...")
         except Exception as e:

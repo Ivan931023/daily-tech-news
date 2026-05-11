@@ -22,11 +22,11 @@ jobs:
 
       - name: Authenticate Claude CLI
         env:
-          CLAUDE_OAUTH_TOKEN: ${{ secrets.CLAUDE_OAUTH_TOKEN }}
+          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
         run: |
           mkdir -p ~/.claude
-          echo "{\"claudeAiOauthToken\":\"$CLAUDE_OAUTH_TOKEN\"}" > ~/.claude/.credentials.json
-
+          echo "$CLAUDE_CREDENTIALS" > ~/.claude/.credentials.json
+          
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

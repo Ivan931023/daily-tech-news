@@ -2,9 +2,8 @@ name: Daily News Generation
 
 on:
   schedule:
-    # 每天 UTC 02:00（台灣時間 10:00）
     - cron: '0 2 * * *'
-  workflow_dispatch:  # 允許手動觸發
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,17 +17,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install Claude CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Authenticate Claude CLI
+        env:
+          CLAUDE_OAUTH_TOKEN: ${{ secrets.CLAUDE_OAUTH_TOKEN }}
+        run: |
+          mkdir -p ~/.claude
+          echo "{\"claudeAiOauthToken\":\"$CLAUDE_OAUTH_TOKEN\"}" > ~/.claude/.credentials.json
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: pip install anthropic
-
       - name: Generate daily articles
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python scripts/generate_news.py
 
       - name: Commit and push articles

@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-"""
-Daily tech news generator using Claude CLI (claude -p).
-Runs via GitHub Actions — no Anthropic API billing required,
-uses Claude.ai subscription via OAuth token.
-"""
 import json
 import os
 import sys
@@ -86,12 +81,12 @@ def generate_article(topic: dict) -> dict:
 }}"""
 
     result = subprocess.run(
-        ["claude", "-p", prompt],
+        ["claude", "-p", prompt, "--output-format", "text"],
         capture_output=True, text=True, timeout=120
     )
 
     if result.returncode != 0:
-        raise RuntimeError(f"claude CLI error: {result.stderr}")
+        raise RuntimeError(f"claude CLI error: {result.stderr[:300]}")
 
     raw = result.stdout.strip()
     if raw.startswith("```"):

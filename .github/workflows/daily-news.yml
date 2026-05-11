@@ -32,6 +32,12 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Debug Claude CLI
+        run: |
+          which claude || echo "claude not found"
+          claude --version || echo "version failed"
+          claude -p "reply with just: ok" 2>&1 || echo "exit code: $?"
+
       - name: Generate daily articles
         run: python scripts/generate_news.py
 

@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Daily tech news generator using Claude API.
-Runs via GitHub Actions every day at 02:00 UTC.
+Daily tech news generator using Claude CLI (claude -p).
+Runs via GitHub Actions — no Anthropic API billing required,
+uses Claude.ai subscription via OAuth token.
 """
 import json
 import os
 import sys
+import subprocess
 from datetime import date, datetime, timezone
 from pathlib import Path
-import anthropic
 
 TODAY = date.today().isoformat()
 ARTICLES_DIR = Path(__file__).parent.parent / "articles"
@@ -46,13 +47,16 @@ SYSTEM_PROMPT = """你是一位橫跨量子物理、電腦科學、金融工程�
 3. 識別主流媒體忽略的結構性矛盾與反直覺發現
 4. 分析二階、三階影響，而非一階明顯結論
 5. 技術術語保留英文縮寫（在中文句子中更清晰）
-6. 文風：精準、克制、有洞察，不煽情"""
+6. 文風：精準、克制、有洞察，不煽情
+7. 只輸出純 JSON，不加任何 markdown 包裹或說明文字"""
 
 
-def generate_article(client: anthropic.Anthropic, topic: dict, index: int) -> dict:
+def generate_article(topic: dict) -> dict:
     today_str = datetime.now(timezone.utc).strftime("%Y年%m月%d日")
 
-    prompt = f"""今天是 {today_str}。請為「量子視野日報」撰寫一篇深度技術分析文章。
+    prompt = f"""{SYSTEM_PROMPT}
+
+今天是 {today_str}。請為「量子視野日報」撰寫一篇深度技術分析文章。
 
 分類：{topic['category']}
 聚焦領域：{topic['focus']}
@@ -76,28 +80,27 @@ def generate_article(client: anthropic.Anthropic, topic: dict, index: int) -> di
     {{"term": "技術術語", "def": "一句話精準定義（40字以內）"}},
     {{"term": "技術術語2", "def": "一句話精準定義"}}
   ],
-  "depth": 深度評分（1-5整數，5最深），
+  "depth": 深度評分（1-5整數，5最深）,
   "read_time": 閱讀時間分鐘數（整數）,
   "date": "{TODAY}"
 }}"""
 
-    message = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=2000,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}]
+    result = subprocess.run(
+        ["claude", "-p", prompt],
+        capture_output=True, text=True, timeout=120
     )
 
-    raw = message.content[0].text.strip()
-    # Strip markdown code fences if present
+    if result.returncode != 0:
+        raise RuntimeError(f"claude CLI error: {result.stderr}")
+
+    raw = result.stdout.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
     raw = raw.strip()
 
-    article = json.loads(raw)
-    return article
+    return json.loads(raw)
 
 
 def update_index(new_date: str):
@@ -110,7 +113,7 @@ def update_index(new_date: str):
 
     if new_date not in index["dates"]:
         index["dates"].insert(0, new_date)
-        index["dates"] = index["dates"][:90]  # keep last 90 days
+        index["dates"] = index["dates"][:90]
 
     index["updated_at"] = datetime.now(timezone.utc).isoformat()
     with open(index_path, "w", encoding="utf-8") as f:
@@ -118,13 +121,6 @@ def update_index(new_date: str):
 
 
 def main():
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("ERROR: ANTHROPIC_API_KEY not set", file=sys.stderr)
-        sys.exit(1)
-
-    client = anthropic.Anthropic(api_key=api_key)
-
     output_path = ARTICLES_DIR / f"{TODAY}.json"
     if output_path.exists():
         print(f"Articles for {TODAY} already exist, skipping.")
@@ -134,7 +130,7 @@ def main():
     for i, topic in enumerate(TOPIC_ROTATION):
         print(f"Generating article {i+1}/{len(TOPIC_ROTATION)}: {topic['category']}")
         try:
-            article = generate_article(client, topic, i)
+            article = generate_article(topic)
             articles.append(article)
             print(f"  ✓ {article['title'][:40]}...")
         except Exception as e:

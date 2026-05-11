@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>量子視野日報 | 科技 · AI · 金融 · 未來</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="logo-block">
+        <span class="logo-symbol">⬡</span>
+        <div>
+          <h1 class="logo-title">量子視野日報</h1>
+          <p class="logo-sub">Quantum Horizon Daily</p>
+        </div>
+      </div>
+      <nav class="tag-nav">
+        <button class="tag active" data-cat="all">全部</button>
+        <button class="tag" data-cat="quantum">量子運算</button>
+        <button class="tag" data-cat="ai">人工智慧</button>
+        <button class="tag" data-cat="finance">金融趨勢</button>
+        <button class="tag" data-cat="future">未來預測</button>
+      </nav>
+      <div class="date-display" id="todayDate"></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="heroSection">
+      <div class="hero-label">今日焦點</div>
+      <h2 class="hero-title" id="heroTitle">載入中…</h2>
+      <p class="hero-summary" id="heroSummary"></p>
+      <div class="hero-meta" id="heroMeta"></div>
+    </section>
+
+    <section class="articles-grid" id="articlesGrid">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>正在載入今日報導…</p>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <div class="sidebar-box">
+        <h3>本週熱門主題</h3>
+        <ul id="hotTopics"></ul>
+      </div>
+      <div class="sidebar-box glossary-box">
+        <h3>技術詞彙速查</h3>
+        <div id="glossary"></div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <p>量子視野日報 · 每日 UTC 02:00 自動更新 · 由 Claude AI 深度分析生成</p>
+    <p class="footer-note">內容為 AI 輔助生成，技術觀點不構成投資建議</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

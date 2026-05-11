@@ -14,31 +14,17 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Claude CLI
-        run: npm install -g @anthropic-ai/claude-code
-
-      - name: Authenticate Claude CLI
-        env:
-          CLAUDE_CREDENTIALS: ${{ secrets.CLAUDE_CREDENTIALS }}
-        run: |
-          mkdir -p ~/.claude
-          echo "$CLAUDE_CREDENTIALS" > ~/.claude/.credentials.json
-          
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Debug Claude CLI
-        run: |
-          which claude || echo "claude not found"
-          claude --version || echo "version failed"
-          claude -p "reply with just: ok" 2>&1 || echo "exit code: $?"
+      - run: pip install google-generativeai
 
       - name: Generate daily articles
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/generate_news.py
 
       - name: Commit and push articles

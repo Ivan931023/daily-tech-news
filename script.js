@@ -151,6 +151,23 @@ function buildBody(a) {
   if (a.outlook) {
     html += `<h3>前瞻展望</h3><p>${a.outlook}</p>`;
   }
+  if (a.references && a.references.length) {
+    html += `<h3>參考資料</h3><ul class="reference-list">`;
+    html += a.references.map(r => {
+      const title = escapeHtml(r.title || '');
+      const source = escapeHtml(r.source || '');
+      const url = r.url ? escapeHtml(r.url) : '';
+      const linkOrText = url
+        ? `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+        : '';
+      return `<li class="reference-item">
+        <div class="reference-title">${title}</div>
+        <div class="reference-source">${source}${linkOrText ? ' · ' + linkOrText : ''}</div>
+      </li>`;
+    }).join('');
+    html += `</ul>`;
+    html += `<p class="reference-disclaimer">※ 參考資料由 AI 生成，建議讀者自行查證連結與引用是否準確。</p>`;
+  }
   return html;
 }
 
@@ -168,7 +185,19 @@ function setupNav() {
 
 // ── Helpers ────────────────────────────────────────────────────
 function catLabel(cat) {
-  return { quantum:'量子運算', ai:'人工智慧', finance:'金融趨勢', future:'未來預測' }[cat] || cat;
+  return {
+    quantum: '量子運算',
+    ai: '人工智慧',
+    finance: '金融趨勢',
+    future: '未來預測',
+    security: '資訊安全'
+  }[cat] || cat;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 }
 
 // ── Sample articles (shown before first generation) ───────────

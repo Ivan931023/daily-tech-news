@@ -19,7 +19,7 @@
 
 ## 文章分類
 
-每日生成 4 篇深度分析，分類輪替：
+每日生成 5 篇深度分析，分類輪替：
 
 | 分類 | 聚焦領域 |
 |------|----------|
@@ -27,6 +27,10 @@
 | `ai` | LLM 架構創新、推論效率、AI Agent、多模態系統 |
 | `finance` | 另類資產、衍生品結構、量化策略、加密金融基礎設施 |
 | `future` | 科技融合趨勢、產業顛覆路徑、地緣科技競爭 |
+| `security` | 後量子密碼工程化、AI 對抗、零信任架構、供應鏈安全、CVE 案例 |
+
+每篇文章包含 `references` 欄位（3-5 篇參考論文/標準文件/技術部落格）方便讀者查證。
+> AI 生成的引用可能有幻覺，請以連結原文為準。
 
 ## 部署
 
@@ -63,8 +67,8 @@ python scripts/generate_news.py
 
 ```json
 {
-  "id": "YYYYMMDD-category-slug",
-  "category": "quantum | ai | finance | future",
+  "id": "YYYY-MM-DD-category",
+  "category": "quantum | ai | finance | future | security",
   "title": "文章標題",
   "summary": "摘要（80-120 字）",
   "overview": "概述（150-200 字）",
@@ -74,7 +78,10 @@ python scripts/generate_news.py
   "outlook": "前瞻展望（100-150 字）",
   "keywords": ["關鍵詞 1", "關鍵詞 2"],
   "glossary": [{ "term": "術語", "def": "定義" }],
-  "depth": 5,
+  "references": [
+    { "title": "論文/文章標題", "source": "arXiv:xxxx 或 期刊/會議", "url": "https://..." }
+  ],
+  "depth": 1-5,
   "read_time": 8,
   "date": "YYYY-MM-DD"
 }

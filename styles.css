@@ -196,10 +196,11 @@ main {
   display: inline-block;
   width: fit-content;
 }
-.cat-quantum { background: rgba(0,212,255,0.15); color: var(--accent); }
-.cat-ai      { background: rgba(124,58,237,0.15); color: #a78bfa; }
-.cat-finance { background: rgba(16,185,129,0.15); color: var(--accent3); }
-.cat-future  { background: rgba(245,158,11,0.15); color: var(--warn); }
+.cat-quantum  { background: rgba(0,212,255,0.15); color: var(--accent); }
+.cat-ai       { background: rgba(124,58,237,0.15); color: #a78bfa; }
+.cat-finance  { background: rgba(16,185,129,0.15); color: var(--accent3); }
+.cat-future   { background: rgba(245,158,11,0.15); color: var(--warn); }
+.cat-security { background: rgba(244,63,94,0.15); color: #f87171; }
 
 .card-title {
   font-family: var(--font-serif);
@@ -333,6 +334,42 @@ main {
   content: '→ ';
   color: var(--accent3);
   font-weight: 700;
+}
+.modal-body .reference-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.modal-body .reference-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+}
+.modal-body .reference-title {
+  color: var(--text);
+  font-weight: 500;
+  margin-bottom: 0.3rem;
+}
+.modal-body .reference-source {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+.modal-body .reference-item a {
+  color: var(--accent);
+  text-decoration: none;
+  word-break: break-all;
+}
+.modal-body .reference-item a:hover { text-decoration: underline; }
+.modal-body .reference-disclaimer {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-top: 0.5rem;
 }
 
 /* ── SIDEBAR ── */

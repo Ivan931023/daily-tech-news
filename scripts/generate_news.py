@@ -32,6 +32,11 @@ TOPIC_ROTATION = [
         "focus": "科技融合趨勢、產業顛覆路徑、地緣科技競爭、新興技術商業化瓶頸",
         "avoid": "避免烏托邦式預測，聚焦具體技術里程碑與商業邏輯"
     },
+    {
+        "category": "security",
+        "focus": "後量子密碼學工程化、AI 對抗攻擊、零信任架構、供應鏈安全、漏洞利用技術",
+        "avoid": "避免基礎資安科普，聚焦協議層細節、實際 CVE 案例與防禦工程"
+    },
 ]
 
 SYSTEM_PROMPT = """你是一位橫跨量子物理、電腦科學、金融工程與科技政策的深度分析師。
@@ -70,6 +75,12 @@ def generate_article(client: Groq, topic: dict, article_id: str) -> dict:
 
 請選擇一個在過去 2-4 週內有實質進展、或有長期結構性重要性但被低估的具體議題。
 
+關於 references 欄位（重要）：
+- 列出 3-5 篇真實存在、可被驗證的參考資料
+- 優先採用：arXiv 論文（含編號）、NIST/IEEE 標準文件、官方技術部落格、知名期刊
+- 不確定的資料寧可不列，也不要編造論文標題、作者、URL 或 arXiv 編號
+- 如果是公開的會議論文，請註明會議名稱與年份（如 USENIX Security 2024）
+
 只輸出純 JSON，格式如下：
 {{
   "id": "{article_id}",
@@ -85,6 +96,10 @@ def generate_article(client: Groq, topic: dict, article_id: str) -> dict:
   "glossary": [
     {{"term": "術語", "def": "定義（40字以內）"}},
     {{"term": "術語2", "def": "定義"}}
+  ],
+  "references": [
+    {{"title": "論文/文章標題", "source": "arXiv:2024.xxxxx 或 期刊/會議/機構名稱與年份", "url": "https://..."}},
+    {{"title": "標題2", "source": "來源2", "url": "https://..."}}
   ],
   "depth": <1-5 整數，根據技術複雜度評估>,
   "read_time": <預計閱讀分鐘數，根據文章長度估算>,

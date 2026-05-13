@@ -59,7 +59,7 @@ function renderHero(a) {
 function renderGrid(articles) {
   const grid = document.getElementById('articlesGrid');
   const filtered = currentCat === 'all' ? articles : articles.filter(a => a.category === currentCat);
-  const toRender = filtered.slice(1); // hero shows [0]
+  const toRender = currentCat === 'all' ? filtered.slice(1) : filtered;
 
   if (toRender.length === 0) {
     grid.innerHTML = '<p style="color:var(--text-dim);padding:2rem">此分類暫無文章</p>';

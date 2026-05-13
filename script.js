@@ -24,15 +24,21 @@ async function loadArticles() {
     if (!res.ok) throw new Error('no index');
     const index = await res.json();
 
-    // Load the latest day's articles
-    const latest = index.dates[0];
-    const r2 = await fetch(`articles/${latest}.json`);
-    if (!r2.ok) throw new Error('no articles');
-    allArticles = await r2.json();
+    // Load all dates in parallel
+    const responses = await Promise.all(
+      index.dates.map(d => fetch(`articles/${d}.json`))
+    );
+    const articleArrays = await Promise.all(
+      responses.map(r => r.ok ? r.json() : [])
+    );
 
+    // Flatten and sort newest-first; articles within same day keep original order
+    allArticles = articleArrays.flat().sort((a, b) => b.date.localeCompare(a.date));
+
+    const todayArticles = articleArrays[0] || [];
     renderHero(allArticles[0]);
     renderGrid(allArticles);
-    renderSidebar(allArticles, index);
+    renderSidebar(todayArticles, index);
   } catch {
     // fallback to sample data when no articles generated yet
     allArticles = SAMPLE_ARTICLES;
@@ -58,8 +64,9 @@ function renderHero(a) {
 
 function renderGrid(articles) {
   const grid = document.getElementById('articlesGrid');
+  const heroId = allArticles[0]?.id;
   const filtered = currentCat === 'all' ? articles : articles.filter(a => a.category === currentCat);
-  const toRender = currentCat === 'all' ? filtered.slice(1) : filtered;
+  const toRender = filtered.filter(a => a.id !== heroId);
 
   if (toRender.length === 0) {
     grid.innerHTML = '<p style="color:var(--text-dim);padding:2rem">此分類暫無文章</p>';
